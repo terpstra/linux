@@ -23,6 +23,7 @@
 #include <asm/soc.h>
 #include <asm/io.h>
 #include <asm/ptdump.h>
+#include <asm/numa.h>
 
 #include "../kernel/head.h"
 
@@ -765,6 +766,7 @@ void __init paging_init(void)
 	unflatten_device_tree();
 #endif
 
+	riscv_numa_init();
 	memblocks_present();
 	sparse_init();
 	setup_zero_page();
