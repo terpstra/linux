@@ -487,6 +487,7 @@ static inline void __kernel_map_pages(struct page *page, int numpages, int enabl
 extern char _start[];
 extern void *dtb_early_va;
 extern u64 satp_mode;
+extern bool pgtable_l4_enabled;
 void setup_bootmem(void);
 void paging_init(void);
 
