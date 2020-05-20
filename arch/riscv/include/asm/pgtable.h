@@ -11,23 +11,29 @@
 
 #include <asm/pgtable-bits.h>
 
-#ifndef __ASSEMBLY__
-
-/* Page Upper Directory not used in RISC-V */
-#include <asm-generic/pgtable-nopud.h>
-#include <asm/page.h>
-#include <asm/tlbflush.h>
-#include <linux/mm_types.h>
-
-#ifdef CONFIG_MMU
+#ifndef CONFIG_MMU
+#define KERNEL_VIRT_ADDR	PAGE_OFFSET
+#define KERNEL_LINK_ADDR	PAGE_OFFSET
+#else
+/*
+ * Leave 2GB for modules and BPF that must lie within a 2GB range around
+ * the kernel.
+ */
+#define KERNEL_VIRT_ADDR	(VMALLOC_END - SZ_2G + 1)
+#define KERNEL_LINK_ADDR	KERNEL_VIRT_ADDR
 
 #define VMALLOC_SIZE     (KERN_VIRT_SIZE >> 1)
 #define VMALLOC_END      (PAGE_OFFSET - 1)
 #define VMALLOC_START    (PAGE_OFFSET - VMALLOC_SIZE)
 
 #define BPF_JIT_REGION_SIZE	(SZ_128M)
-#define BPF_JIT_REGION_START	(PAGE_OFFSET - BPF_JIT_REGION_SIZE)
-#define BPF_JIT_REGION_END	(VMALLOC_END)
+#define BPF_JIT_REGION_START	PFN_ALIGN((unsigned long)&_end)
+#define BPF_JIT_REGION_END	(BPF_JIT_REGION_START + BPF_JIT_REGION_SIZE)
+
+#ifdef CONFIG_64BIT
+#define VMALLOC_MODULE_START	BPF_JIT_REGION_END
+#define VMALLOC_MODULE_END	(((unsigned long)&_start & PAGE_MASK) + SZ_2G)
+#endif
 
 /*
  * Roughly size the vmemmap space to be large enough to fit enough
@@ -57,8 +63,15 @@
 #define FIXADDR_SIZE     PGDIR_SIZE
 #endif
 #define FIXADDR_START    (FIXADDR_TOP - FIXADDR_SIZE)
-
 #endif
+
+#ifndef __ASSEMBLY__
+
+/* Page Upper Directory not used in RISC-V */
+#include <asm-generic/pgtable-nopud.h>
+#include <asm/page.h>
+#include <asm/tlbflush.h>
+#include <linux/mm_types.h>
 
 #ifdef CONFIG_64BIT
 #include <asm/pgtable-64.h>
@@ -463,6 +476,7 @@ static inline void __kernel_map_pages(struct page *page, int numpages, int enabl
 
 #define kern_addr_valid(addr)   (1) /* FIXME */
 
+extern char _start[];
 extern void *dtb_early_va;
 void setup_bootmem(void);
 void paging_init(void);
