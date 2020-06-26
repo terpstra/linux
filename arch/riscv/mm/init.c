@@ -759,6 +759,12 @@ void mark_rodata_ro(void)
 void __init paging_init(void)
 {
 	setup_vm_final();
+#if IS_ENABLED(CONFIG_BUILTIN_DTB)
+	unflatten_and_copy_device_tree();
+#else
+	unflatten_device_tree();
+#endif
+
 	memblocks_present();
 	sparse_init();
 	setup_zero_page();
